@@ -955,38 +955,89 @@
                     }
                 }
 
-                // 简化下载兼容处理
+                // Android专用下载处理
                 try {
-                    // 尝试使用Capacitor文件API（Android环境）
+                    console.log('开始下载图片...');
+                    const base64Data = canvas.toDataURL('image/jpeg', 0.95);
+                    console.log('Canvas转换完成，长度:', base64Data.length);
+
+                    // 检测Capacitor环境
                     const Capacitor = window.Capacitor;
-                    if (Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
-                        const { Filesystem } = Capacitor.Plugins;
+                    console.log('Capacitor检测:', Capacitor ? '存在' : '不存在');
 
-                        const base64Data = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
-                        const fileName = `打卡水印图_${new Date().getTime()}.jpg`;
+                    if (Capacitor) {
+                        console.log('Capacitor平台:', Capacitor.getPlatform());
 
-                        // 保存到Download文件夹
-                        await Filesystem.writeFile({
-                            path: fileName,
-                            data: base64Data,
-                            directory: Filesystem.Directories.ExternalStorage
-                        });
+                        // Android环境使用文件API
+                        if (Capacitor.getPlatform() === 'android') {
+                            const { Filesystem } = Capacitor.Plugins;
 
-                        alert(`图片已保存到Download文件夹: ${fileName}`);
-                    } else {
-                        // 普通浏览器环境
-                        const a = document.createElement('a');
-                        a.href = canvas.toDataURL('image/jpeg', 0.95);
-                        a.download = `打卡水印图_${new Date().getTime()}.jpg`;
-                        a.click();
+                            // 先检查权限
+                            try {
+                                const permission = await Filesystem.checkPermissions();
+                                console.log('文件系统权限:', permission);
+                            } catch (permError) {
+                                console.log('权限检查失败:', permError);
+                            }
+
+                            const fileName = `打卡水印图_${new Date().getTime()}.jpg`;
+                            const cleanData = base64Data.split(',')[1];
+
+                            console.log('准备保存文件:', fileName);
+
+                            // 使用Documents目录（更可靠）
+                            await Filesystem.writeFile({
+                                path: fileName,
+                                data: cleanData,
+                                directory: Filesystem.Directories.Documents,
+                                recursive: true
+                            });
+
+                            console.log('文件保存成功');
+
+                            // 尝试获取文件路径用于提示
+                            try {
+                                const fileUri = await Filesystem.getUri({
+                                    directory: Filesystem.Directories.Documents,
+                                    path: fileName
+                                });
+                                alert(`图片已保存: ${fileName}\n路径: ${fileUri}`);
+                            } catch (uriError) {
+                                alert(`图片已保存到Documents文件夹: ${fileName}`);
+                            }
+
+                            if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+                            return;
+                        }
                     }
+
+                    // 浏览器环境或其他平台
+                    console.log('使用浏览器下载方式');
+                    const link = document.createElement('a');
+                    link.href = base64Data;
+                    link.download = `打卡水印图_${new Date().getTime()}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    alert('图片已开始下载');
+
+                    if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+
                 } catch (downloadError) {
-                    // 如果Capacitor失败，使用普通下载
-                    console.log('文件API失败，使用普通下载:', downloadError);
-                    const a = document.createElement('a');
-                    a.href = canvas.toDataURL('image/jpeg', 0.95);
-                    a.download = `打卡水印图_${new Date().getTime()}.jpg`;
-                    a.click();
+                    console.error('下载失败:', downloadError);
+                    alert('下载失败: ' + downloadError.message);
+
+                    // 最后的回退方案
+                    try {
+                        const link = document.createElement('a');
+                        link.href = canvas.toDataURL('image/jpeg', 0.95);
+                        link.download = `打卡水印图_${new Date().getTime()}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } catch (fallbackError) {
+                        alert('下载功能暂时不可用，请截图保存');
+                    }
                 }
 
                 if (navigator.vibrate) navigator.vibrate([30, 50, 30]);

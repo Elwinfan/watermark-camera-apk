@@ -857,12 +857,6 @@
         </footer>
     </div>
 
-    <!-- Capacitor核心库（CDN） -->
-    <script src="https://cdn.jsdelivr.net/npm/@capacitor/core@6.0.0/dist/capacitor.js"></script>
-
-    <!-- Capacitor文件系统插件（CDN） -->
-    <script src="https://cdn.jsdelivr.net/npm/@capacitor/filesystem@6.0.0/dist/esm/filesystem.js" type="module"></script>
-
     <!-- html2canvas库（CDN） -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
@@ -961,12 +955,12 @@
                     }
                 }
 
-                // Android兼容下载
+                // 简化下载兼容处理
                 try {
                     // 尝试使用Capacitor文件API（Android环境）
-                    if (window.Capacitor) {
+                    const Capacitor = window.Capacitor;
+                    if (Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
                         const { Filesystem } = Capacitor.Plugins;
-                        const { FilePicker } = Capacitor.Plugins;
 
                         const base64Data = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
                         const fileName = `打卡水印图_${new Date().getTime()}.jpg`;
@@ -975,8 +969,7 @@
                         await Filesystem.writeFile({
                             path: fileName,
                             data: base64Data,
-                            directory: Filesystem.Directories.ExternalStorage,
-                            mimeType: 'image/jpeg'
+                            directory: Filesystem.Directories.ExternalStorage
                         });
 
                         alert(`图片已保存到Download文件夹: ${fileName}`);
@@ -987,9 +980,9 @@
                         a.download = `打卡水印图_${new Date().getTime()}.jpg`;
                         a.click();
                     }
-                } catch (capError) {
+                } catch (downloadError) {
                     // 如果Capacitor失败，使用普通下载
-                    console.log('Capacitor下载失败，使用普通方法:', capError);
+                    console.log('文件API失败，使用普通下载:', downloadError);
                     const a = document.createElement('a');
                     a.href = canvas.toDataURL('image/jpeg', 0.95);
                     a.download = `打卡水印图_${new Date().getTime()}.jpg`;

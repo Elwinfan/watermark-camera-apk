@@ -1,0 +1,23 @@
+{
+  "name": "watermark-camera",
+  "version": "1.0.0",
+  "description": "专业打卡水印生成工具",
+  "main": "index.html",
+  "scripts": {
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "build": "echo 'No build step needed for static HTML'"
+  },
+  "keywords": [
+    "watermark",
+    "camera",
+    "attendance"
+  ],
+  "author": "Elwinfan",
+  "license": "MIT",
+  "devDependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/cli": "^6.0.0"
+  }
+}

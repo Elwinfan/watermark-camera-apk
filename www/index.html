@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4BBBF8">
+    <title>水印相机 - 专业打卡工具</title>
+
+    <!-- 内联PWA manifest -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%9C%BA%20-%20%E4%B8%93%E4%B8%9A%E6%89%93%E5%8D%A1%E5%B7%A5%E5%85%B7%22%2C%22short_name%22%3A%22%E6%B0%B4%E5%8D%B0%E7%9B%B8%E6%9C%BA%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F9FAFB%22%2C%22theme_color%22%3A%22%234BBBF8%22%2C%22orientation%22%3A%22portrait%22%7D">
+
+    <style>
+        /* ==================== 全局样式变量 ==================== */
+        :root {
+            --ios-blue: #007AFF;
+            --ios-green: #34C759;
+            --ios-red: #FF3B30;
+            --primary: #4BBBF8;
+            --primary-light: #E3F2FD;
+            --secondary: #00A3FF;
+            --gray-50: #F9FAFB;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-300: #D1D5DB;
+            --gray-400: #9CA3AF;
+            --gray-500: #6B7280;
+            --gray-600: #4B5563;
+            --gray-700: #374151;
+            --gray-800: #1F2937;
+            --gray-900: #111827;
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .mobile-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: var(--gray-50);
+            min-height: 100vh;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 4px var(--spacing-md);
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .app-icon {
+            width: 32px;
+            height: 32px;
+            margin: 12px auto var(--spacing-md);
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .app-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: var(--spacing-xs);
+            letter-spacing: -0.5px;
+        }
+
+        .app-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .preview-section,
+        .config-section {
+            max-width: 600px;
+            margin: var(--spacing-lg) auto;
+            padding: 0 var(--spacing-md);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        .live-badge {
+            background: var(--ios-red);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .canvas-container {
+            background: var(--gray-900);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+            aspect-ratio: 3/4;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background-color: #000;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, var(--ios-green) 0%, #30D158 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+        }
+
+        .primary-btn:active {
+            transform: scale(0.98);
+        }
+
+        .secondary-btn {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 2px solid var(--gray-200);
+        }
+
+        .secondary-btn:active {
+            background: var(--gray-200);
+            transform: scale(0.98);
+        }
+
+        .btn-icon {
+            font-size: 18px;
+        }
+
+        .collapse-toggle {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--gray-500);
+            cursor: pointer;
+            padding: var(--spacing-xs);
+            transition: transform var(--transition-normal);
+        }
+
+        .collapse-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .config-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            transition: all var(--transition-normal);
+        }
+
+        .config-form.collapsed {
+            display: none;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-normal);
+        }
+
+        .form-card:active {
+            transform: scale(0.99);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .card-hint {
+            font-size: 12px;
+            color: var(--gray-400);
+        }
+
+        .quick-action {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .upload-card {
+            background: linear-gradient(135deg, var(--primary-light) 0%, white 100%);
+        }
+
+        .upload-area {
+            position: relative;
+        }
+
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .upload-placeholder {
+            border: 2px dashed var(--primary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-xl) var(--spacing-md);
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all var(--transition-normal);
+        }
+
+        .upload-area:hover .upload-placeholder {
+            background: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .upload-placeholder p {
+            font-size: 14px;
+            color: var(--gray-700);
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .upload-tip {
+            font-size: 12px;
+            color: var(--gray-400);
+        }
+
+        .modern-input {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-family: inherit;
+            transition: all var(--transition-fast);
+            background: var(--gray-50);
+        }
+
+        .modern-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(75, 187, 248, 0.1);
+        }
+
+        .input-helper {
+            font-size: 12px;
+            color: var(--gray-400);
+            margin-top: var(--spacing-xs);
+        }
+
+        /* 水印样式 */
+        .watermark {
+            position: absolute;
+            left: 3.5%;
+            bottom: 7%;
+            color: white;
+            z-index: 10;
+        }
+
+        .clock-card {
+            margin-bottom: -5px;
+            max-width: 28vw;
+            width: fit-content;
+            aspect-ratio: 250/230;
+        }
+
+        .card-top {
+            background: #4BBBF8;
+            border-radius: 6px 6px 0 0;
+            padding: 0; /* 移除padding，由.title-wrapper控制间距 */
+
+            /* 使用flex居中内部容器，与白色框保持一致 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-bottom {
+            background: white;
+            border-radius: 0 0 6px 6px;
+            padding: 0;
+
+            /* 修复：使用flex而非grid居中内部容器，确保双向居中 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* 调整高度为35px */
+            min-height: 35px;
+        }
+
+        /* 优化：时分文字固定容器，缩小尺寸适配字体大小 */
+        .time-wrapper {
+            /* 调整容器尺寸 */
+            min-width: 75px;
+            min-height: 35px;
+            width: 75px;
+            height: 35px;
+
+            /* 修改：向右偏移，垂直方向靠上对齐 */
+            display: flex;
+            align-items: flex-start;         /* 顶部对齐，不再垂直居中 */
+            justify-content: flex-start;     /* 改为左对齐 */
+            padding-top: 2px;                  /* 保持顶部间距2px */
+            padding-left: 9px;                /* 向右偏移9px */
+
+            /* 保持line-height: 1，消除默认行高偏移 */
+            line-height: 1;
+        }
+
+        .time-text {
+            /* 时分文字样式，继承原card-bottom的字体设置 */
+            font-size: clamp(22px, 3.8vw, 30px);  /* 调整为30px */
+            font-weight: 500;
+            color: #003366;
+
+            /* 确保文字本身无多余行高 */
+            line-height: 1;
+        }
+
+        /* 统一结构：蓝色框固定容器 */
+        .title-wrapper {
+            /* 固定容器尺寸 */
+            min-width: 75px;
+            min-height: 25px;
+            width: 75px;
+            height: 25px;
+
+            /* 使用flex双向居中，确保文字完全居中 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* 设置line-height: 1 */
+            line-height: 1;
+        }
+
+        .title-text {
+            /* 标题文字样式，继承原card-top的字体设置 */
+            font-size: clamp(14px, 2.5vw, 20px);  /* 从16px增大到20px */
+            font-weight: 300;
+            color: white;
+            letter-spacing: 3px;
+
+            /* 确保文字本身无多余行高 */
+            line-height: 1;
+        }
+
+        .text-list {
+            font-size: clamp(12px, 2.2vw, 14px);
+            font-weight: 400;  /* 调整为400，默认正常粗细 */
+            line-height: 1.35;
+            color: white;
+
+            /* 修复：为Canvas导出做准备，统一文字度量 */
+            letter-spacing: 0;        /* 重置字间距，避免Canvas度量差异 */
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;  /* 固定字体，确保度量一致 */
+        }
+
+        /* 修复：为"·"符号单独设置样式，确保在CSS中垂直居中 */
+        .text-list span {
+            display: inline-block;
+        }
+
+        .quote-blue {
+            color: #00A3FF;
+            font-size: clamp(14px, 3vw, 18px);
+            font-weight: bold;
+            margin-right: 2px;
+        }
+
+        .cert-text {
+            position: absolute;
+            left: 3.5%;
+            bottom: 3%;
+            color: white;
+            opacity: 0.85;
+            font-size: clamp(10px, 1.8vw, 12px);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);  /* 添加黑色阴影，让文字更清晰 */
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        .cert-circle {
+            width: clamp(12px, 3vw, 16px);
+            height: clamp(12px, 3vw, 16px);
+            border-radius: 50%;
+            position: relative;
+
+            /* 内圈：细边框 */
+            border: 0.5px solid white;
+            background: transparent;
+
+            /* 微调位置：向右向下移动 */
+            transform: translate(1px, 8%);
+        }
+
+        /* 外圈：中等边框圆环 */
+        .cert-circle::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            border: 1px solid white;
+            background: transparent;
+            z-index: -1; /* 确保外圈在文字下方，修复Canvas导出偏移 */
+        }
+
+        /* "证"字：独立定位，向左移动 */
+        .cert-char {
+            position: absolute;
+            font-size: clamp(8px, 1.5vw, 10px);
+            color: white;
+            left: 4.5%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .logo-right {
+            position: absolute;
+            right: 2%;
+            bottom: 2%;
+            color: white;
+            opacity: 0.8;
+            font-size: clamp(10px, 1.8vw, 12px);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 10;
+        }
+
+        .logo-icon {
+            width: clamp(18px, 3.5vw, 24px);
+            height: clamp(18px, 3.5vw, 24px);
+        }
+
+        .logo-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: white;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .app-footer {
+            background: var(--gray-100);
+            padding: var(--spacing-xl) var(--spacing-md);
+            text-align: center;
+            margin-top: var(--spacing-xl);
+        }
+
+        /* 验证遮罩层样式 */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .auth-box {
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .auth-question {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .auth-btn:active {
+            transform: translateY(0);
+        }
+
+        .auth-error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 15px;
+            min-height: 20px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--gray-500);
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .copyright {
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        @media (min-width: 768px) {
+            .mobile-container {
+                max-width: 768px;
+                padding: var(--spacing-lg);
+            }
+
+            .preview-section,
+            .config-section {
+                padding: 0;
+            }
+
+            .quick-actions {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .mobile-container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: var(--spacing-xl);
+                max-width: 1200px;
+                padding: var(--spacing-xl);
+            }
+
+            .preview-section {
+                position: sticky;
+                top: var(--spacing-lg);
+                height: fit-content;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 验证遮罩层 -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-box">
+            <h2 class="auth-title">🔐 身份验证</h2>
+            <p class="auth-question">请输入我们的口号</p>
+            <input type="text" id="authAnswer" class="auth-input" placeholder="输入答案">
+            <button id="authBtn" class="auth-btn">确认</button>
+            <p id="authError" class="auth-error"></p>
+        </div>
+    </div>
+
+    <div class="mobile-container" id="mainContent" style="display: none;">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="app-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                </div>
+                <h1 class="app-title">水印相机</h1>
+                <p class="app-subtitle">专业打卡水印生成工具</p>
+            </div>
+        </header>
+
+        <section class="config-section">
+            <div class="section-header">
+                <h2 class="section-title">水印配置</h2>
+                <button class="collapse-toggle" id="collapseToggle">
+                    <span class="toggle-icon">▼</span>
+                </button>
+            </div>
+
+            <div class="config-form" id="configForm">
+                <div class="form-card upload-card">
+                    <div class="card-header">
+                        <span class="card-title">📷 上传照片</span>
+                        <span class="card-hint">支持JPG/PNG</span>
+                    </div>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="uploadFile" accept="image/*" class="file-input">
+                        <div class="upload-placeholder">
+                            <div class="upload-icon">📷</div>
+                            <p>点击或拖拽上传照片</p>
+                            <span class="upload-tip">最大支持10MB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div class="card-header">
+                        <span class="card-title">🕐 打卡时间</span>
+                    </div>
+                    <div class="form-group">
+                        <input type="time" id="inpTime" value="09:13" class="modern-input" oninput="render()">
+                        <div class="input-helper">当前时间自动同步</div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div class="card-header">
+                        <span class="card-title">📅 日期星期</span>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="inpDate" value="2026.06.20 星期六" class="modern-input" placeholder="格式：2026.06.20 星期六" oninput="render()">
+                        <div class="input-helper">自动获取当前日期</div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div class="card-header">
+                        <span class="card-title">📍 打卡地点</span>
+                        <button class="quick-action" id="autoLocation">📍 自动定位</button>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="inpAddr" value="泉州市・乐隆隆" class="modern-input" placeholder="输入打卡地点" oninput="render()">
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div class="card-header">
+                        <span class="card-title">📝 备注信息</span>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="inpNote" value="力诚食品-泉州办-何XX-代码" class="modern-input" placeholder="输入备注信息" oninput="render()">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="preview-section">
+            <div class="section-header">
+                <h2 class="section-title">实时预览</h2>
+                <span class="live-badge">LIVE</span>
+            </div>
+
+            <div class="canvas-container" id="canvasContainer">
+                <img id="bgImg" src="" alt="预览图片" class="preview-image">
+
+                <div class="watermark">
+                    <div class="clock-card">
+                        <div class="card-top">
+                            <!-- 统一结构：蓝色框也添加固定容器，与白色框保持一致 -->
+                            <div class="title-wrapper">
+                                <div class="title-text">打卡记录</div>
+                            </div>
+                        </div>
+                        <div class="card-bottom">
+                            <!-- 修复：新建固定尺寸容器包裹时分文字，确保flex双向居中 -->
+                            <div class="time-wrapper">
+                                <div class="time-text" id="showTime">09:13</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-list">
+                        <div id="showDate">2026.06.20 星期六</div>
+                        <div id="showAddr">泉州市・乐隆隆</div>
+                        <div><span class="quote-blue">"</span><span id="showNote">力诚食品-泉州办-何XX-代码</span></div>
+                    </div>
+                </div>
+
+                <div class="cert-text">
+                    <span class="cert-circle"></span>
+                    <span class="cert-char">证</span>
+                    水印相机已确保时间不可篡改
+                </div>
+
+                <div class="logo-right">
+                    <span class="logo-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                    </span>
+                    水印相机
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button class="action-btn primary-btn" id="downloadBtn">
+                    <span class="btn-icon">⬇</span>
+                    下载图片
+                </button>
+                <button class="action-btn secondary-btn" id="shareBtn">
+                    <span class="btn-icon">↗</span>
+                    分享
+                </button>
+            </div>
+        </section>
+
+        <footer class="app-footer">
+            <p class="copyright">我们从无意投机取巧、谋求捷径，<br>所有行动的出发点，都是立足本职，<br>助力公司稳步发展、持续成长。</p>
+        </footer>
+    </div>
+
+    <!-- html2canvas库（CDN） -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <script>
+        // ==================== 核心功能 ====================
+        function render() {
+            document.getElementById('showTime').innerText = document.getElementById('inpTime').value;
+            document.getElementById('showDate').innerText = document.getElementById('inpDate').value;
+            document.getElementById('showAddr').innerText = document.getElementById('inpAddr').value;
+            document.getElementById('showNote').innerText = document.getElementById('inpNote').value;
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+
+        document.getElementById('uploadFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                alert('文件大小不能超过10MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const img = document.getElementById('bgImg');
+                img.src = ev.target.result;
+                img.onload = function() {
+                    const container = document.getElementById('canvasContainer');
+                    container.style.aspectRatio = `${img.naturalWidth}/${img.naturalHeight}`;
+                    if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function downloadImage() {
+            if (!document.getElementById('bgImg').src) {
+                alert('请先上传一张照片');
+                return;
+            }
+
+            try {
+                const container = document.getElementById('canvasContainer');
+                const canvas = await html2canvas(container, {
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false,
+
+                    // 修复：启用letterRendering优化文字渲染，确保导出图片文字对齐一致
+                    letterRendering: true,
+
+                    // 修复：根据设备像素比适配scale，统一浏览器预览和导出效果
+                    scale: window.devicePixelRatio || 2
+                });
+
+                // 简化方案：让"·"后的文字左移
+                const ctx = canvas.getContext('2d');
+                const scale = window.devicePixelRatio || 2;
+
+                // 查找地址元素
+                const addressElement = document.getElementById('showAddr');
+                if (addressElement && addressElement.textContent.includes('·')) {
+                    const containerRect = container.getBoundingClientRect();
+                    const addressRect = addressElement.getBoundingClientRect();
+
+                    // 计算相对位置
+                    const relativeX = (addressRect.left - containerRect.left) * scale;
+                    const relativeY = (addressRect.top - containerRect.top) * scale;
+                    const fontSize = parseFloat(window.getComputedStyle(addressElement).fontSize) * scale;
+                    const fontFamily = window.getComputedStyle(addressElement).fontFamily;
+
+                    // 清除原文本
+                    ctx.clearRect(relativeX, relativeY, addressRect.width * scale, addressRect.height * scale);
+
+                    // 重新绘制：检测到"·"后，让后续文字左移
+                    ctx.font = `${fontSize}px ${fontFamily}`;
+                    ctx.fillStyle = 'white';
+                    ctx.textBaseline = 'middle';
+                    ctx.textAlign = 'left';
+
+                    const text = addressElement.textContent;
+                    const dotIndex = text.indexOf('·');
+                    if (dotIndex >= 0) {
+                        const beforeDot = text.substring(0, dotIndex + 1);  // 包含"·"
+                        const afterDot = text.substring(dotIndex + 1);      // "·"后的文字
+
+                        const centerY = relativeY + (addressRect.height * scale / 2);
+                        let currentX = relativeX;
+
+                        // 绘制"·"及之前的文字
+                        ctx.fillText(beforeDot, currentX, centerY);
+                        currentX += ctx.measureText(beforeDot).width;
+
+                        // 绘制"·"后的文字（左移20%字体大小）
+                        const leftOffset = fontSize * 0.2;  // 可调整的左移量
+                        ctx.fillText(afterDot, currentX - leftOffset, centerY);
+                    }
+                }
+
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/jpeg', 0.95);
+                a.download = `打卡水印图_${new Date().getTime()}.jpg`;
+                a.click();
+
+                if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+            } catch (error) {
+                console.error('下载失败:', error);
+                alert('下载失败，请重试');
+            }
+        }
+
+        async function shareImage() {
+            if (!document.getElementById('bgImg').src) {
+                alert('请先上传一张照片');
+                return;
+            }
+
+            try {
+                const container = document.getElementById('canvasContainer');
+                const canvas = await html2canvas(container, {
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false,
+
+                    // 修复：启用letterRendering优化文字渲染，确保导出图片文字对齐一致
+                    letterRendering: true,
+
+                    // 修复：根据设备像素比适配scale，统一浏览器预览和导出效果
+                    scale: window.devicePixelRatio || 2
+                });
+
+                // 简化方案：让"·"后的文字左移（与downloadImage保持一致）
+                const ctx = canvas.getContext('2d');
+                const scale = window.devicePixelRatio || 2;
+
+                // 查找地址元素
+                const addressElement = document.getElementById('showAddr');
+                if (addressElement && addressElement.textContent.includes('·')) {
+                    const containerRect = container.getBoundingClientRect();
+                    const addressRect = addressElement.getBoundingClientRect();
+
+                    // 计算相对位置
+                    const relativeX = (addressRect.left - containerRect.left) * scale;
+                    const relativeY = (addressRect.top - containerRect.top) * scale;
+                    const fontSize = parseFloat(window.getComputedStyle(addressElement).fontSize) * scale;
+                    const fontFamily = window.getComputedStyle(addressElement).fontFamily;
+
+                    // 清除原文本
+                    ctx.clearRect(relativeX, relativeY, addressRect.width * scale, addressRect.height * scale);
+
+                    // 重新绘制：检测到"·"后，让后续文字左移
+                    ctx.font = `${fontSize}px ${fontFamily}`;
+                    ctx.fillStyle = 'white';
+                    ctx.textBaseline = 'middle';
+                    ctx.textAlign = 'left';
+
+                    const text = addressElement.textContent;
+                    const dotIndex = text.indexOf('·');
+                    if (dotIndex >= 0) {
+                        const beforeDot = text.substring(0, dotIndex + 1);  // 包含"·"
+                        const afterDot = text.substring(dotIndex + 1);      // "·"后的文字
+
+                        const centerY = relativeY + (addressRect.height * scale / 2);
+                        let currentX = relativeX;
+
+                        // 绘制"·"及之前的文字
+                        ctx.fillText(beforeDot, currentX, centerY);
+                        currentX += ctx.measureText(beforeDot).width;
+
+                        // 绘制"·"后的文字（左移20%字体大小）
+                        const leftOffset = fontSize * 0.2;  // 可调整的左移量
+                        ctx.fillText(afterDot, currentX - leftOffset, centerY);
+                    }
+                }
+
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], '打卡水印图.jpg', { type: 'image/jpeg' });
+
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: '打卡水印',
+                                text: '分享打卡水印图片'
+                            });
+                        } catch (err) {
+                            console.log('分享取消:', err);
+                        }
+                    } else {
+                        alert('您的浏览器不支持分享功能，将自动下载图片');
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `打卡水印图_${new Date().getTime()}.jpg`;
+                        a.click();
+                    }
+                }, 'image/jpeg', 0.95);
+            } catch (error) {
+                console.error('分享失败:', error);
+                alert('分享失败，请重试');
+            }
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', downloadImage);
+        document.getElementById('shareBtn').addEventListener('click', shareImage);
+
+        // ==================== 自动时间同步 ====================
+        function syncCurrentTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeInput = document.getElementById('inpTime');
+            if (timeInput) timeInput.value = `${hours}:${minutes}`;
+
+            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const weekday = weekdays[now.getDay()];
+
+            const dateInput = document.getElementById('inpDate');
+            if (dateInput) dateInput.value = `${year}.${month}.${day} ${weekday}`;
+
+            render();
+        }
+
+        // ==================== 验证系统 ====================
+        function checkAuth() {
+            const isVerified = localStorage.getItem('auth_verified');
+
+            if (isVerified === 'true') {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            }
+        }
+
+        document.getElementById('authBtn').addEventListener('click', function() {
+            const answer = document.getElementById('authAnswer').value.trim();
+            const errorEl = document.getElementById('authError');
+
+            if (answer === '创') {
+                localStorage.setItem('auth_verified', 'true');
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+            } else {
+                errorEl.textContent = '❌ 答案错误，请重试';
+                document.getElementById('authAnswer').value = '';
+                document.getElementById('authAnswer').focus();
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            }
+        });
+
+        document.getElementById('authAnswer').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('authBtn').click();
+            }
+        });
+
+        window.addEventListener('load', checkAuth);
+
+        window.addEventListener('load', syncCurrentTime);
+        setInterval(syncCurrentTime, 60000);
+
+        // ==================== 自动定位 ====================
+        document.getElementById('autoLocation').addEventListener('click', function() {
+            alert('暂时搜不到位置，功能加急赶工啦兄弟');
+        });
+
+        // ==================== 配置面板折叠 ====================
+        document.getElementById('collapseToggle').addEventListener('click', function() {
+            const configForm = document.getElementById('configForm');
+            const isCollapsed = this.classList.contains('collapsed');
+
+            if (isCollapsed) {
+                this.classList.remove('collapsed');
+                configForm.classList.remove('collapsed');
+                configForm.style.display = 'flex';
+            } else {
+                this.classList.add('collapsed');
+                configForm.classList.add('collapsed');
+                setTimeout(() => {
+                    configForm.style.display = 'none';
+                }, 300);
+            }
+
+            if (navigator.vibrate) navigator.vibrate(10);
+        });
+
+        // ==================== 窗口调整 ====================
+        window.addEventListener('resize', function() {
+            const img = document.getElementById('bgImg');
+            if (img.src && img.complete) {
+                const container = document.getElementById('canvasContainer');
+                container.style.aspectRatio = `${img.naturalWidth}/${img.naturalHeight}`;
+            }
+        });
+
+        // ==================== Service Worker（内联注册） ====================
+        if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+            // 创建内联Service Worker
+            const swCode = `
+                const CACHE_NAME = 'watermark-camera-v1';
+                const urlsToCache = ['./', 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'];
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                            .then(cache => cache.addAll(urlsToCache.map(url => new Request(url, { mode: 'no-cors' }))))
+                    );
+                    self.skipWaiting();
+                });
+
+                self.addEventListener('activate', event => {
+                    event.waitUntil(
+                        caches.keys().then(cacheNames => {
+                            return Promise.all(
+                                cacheNames.map(cacheName => {
+                                    if (cacheName !== CACHE_NAME) {
+                                        return caches.delete(cacheName);
+                                    }
+                                })
+                            );
+                        })
+                    );
+                    return self.clients.claim();
+                });
+
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        fetch(event.request)
+                            .then(response => {
+                                if (!response || response.status !== 200 || response.type !== 'basic') {
+                                    return response;
+                                }
+                                const responseToCache = response.clone();
+                                caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+                                return response;
+                            })
+                            .catch(() => caches.match(event.request))
+                    );
+                });
+            `;
+
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swUrl)
+                    .then(reg => console.log('✅ Service Worker注册成功'))
+                    .catch(err => console.log('❌ Service Worker注册失败:', err));
+            });
+        }
+    </script>
+</body>
+</html>

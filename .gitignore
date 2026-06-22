@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json  # GitHub Actions需要这个文件
 yarn.lock
 
 # Capacitor
